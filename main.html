@@ -1,7 +1,13 @@
 <html>
-	<head>voice</head>
+	<head>
+		<script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-1.9.0.min.js"></script>
+		<script src='speak-voice.js'></script>
+		<link rel="stylesheet" type="text/css" href="mystyle.css">
+	</head>
 	<body>
-		<h1>hello!!</h1>
-		<script src='voice.js'></script>
+		<lable>请输入文字（请使用全角空格）:</lable>
+		<input  class="voiceText" type="text" />
+		<button class="voiceTextBtn">转化为语音</button>
+		<div class="vedioDiv"></div>
 	</body>
 </html>
