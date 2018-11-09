@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <script src="jquery-3.2.1.min.js"></script>
+    <script src="recoder.js"></script>
+    <script src="main.js"></script>
+
+    <body>
+        <div class="messages"></div>
+        <audio controls autoplay></audio>  
+        <div class="contrs">
+                <input type="button" value="开始录音" onclick="startRecording()"/>  
+                <input type="button" value="获取录音" onclick="obtainRecord()"/>   
+                <input type="button" value="发送" onclick="send()"/>  
+        </div>
+        <div class="error"></div>
+    </body>
+</html>

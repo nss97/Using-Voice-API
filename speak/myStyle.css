@@ -1,0 +1,14 @@
+.vedioDiv {
+     visibility: hidden;
+}
+
+textarea {
+	height:100px;
+	width:200px;
+	overflow: auto;
+
+}
+
+h1{
+	font-size: 1000px;
+}

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-3.2.1.min.js"></script>
+    <script src="recorder.js"></script>
+    <link rel="stylesheet" type="text/css" href="mystyle.css">
+    <body>
+        <div class="messages"></div>
+        <audio controls autoplay></audio>  
+        <div class="contrs">
+            <button onclick="startRecording()">开始录音</button>  
+            <button onclick="stopRecording()">终止录音</button>
+            <button onclick="obtainRecord()">下载录音</button>  
+            <button onclick="play()">播放</button> 
+        </div>
+        <div class="error"></div>
+    </body>
+</html>
