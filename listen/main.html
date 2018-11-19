@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <meta http-equiv="Content-Type"content="text/html; charset=utf-8"/>
+    <script src="jquery-3.2.1.min.js"></script>
+    <script src="recorder.js"></script>
+    <link rel="stylesheet" type="text/css" href="mystyle.css">
+    <body>
+        <audio controls autoplay></audio>  
+        <div class="contrs">
+            <button onclick="startRecording()">开始录音</button>  
+            <button onclick="stopRecording()">终止录音</button>
+            <button onclick="ASR()">语音识别</button>
+        </div>
+        <div class="debug">
+            <button onclick="obtainRecord()">下载录音</button>  
+            <button onclick="play()">播放</button> 
+        </div>
+        <div class="error"></div>
+
+        <div id="inRealSystem">
+            <div class="messages"></div>
+            <button class="test" onmousedown="down()" onmouseup="up()">一键操作</button>
+            <>
+        </div>
+    </body>
+</html>
