@@ -1,6 +1,8 @@
 // API part
 var recorder;
 var voice;
+var language="Chinese";
+
 
 function startRecording() {
     if (recorder) {
@@ -25,20 +27,73 @@ function stopRecording() {
     }
 }
 
-function obtainRecord() {
-    if (!voice) {
-        showError("请先开始录音");
-        return;
-    }
-    var record = voice;
-    if (record.duration !== 0) {
-        downloadRecord(record.blob);
-    } else {
-        showError("请先开始录音")
-    }
-};
+function ASR() {
+    function toBackend(record) {
+        // 文件转成base64传输
+        var reader = new FileReader();
+        reader.readAsDataURL(record);
+        // reader.readAsBinaryString(record); 转成二进制
+        // 文件转换成功后加载
+        reader.onload = function() {
+            // 读取转出的DATAURL，去掉DATAURL的首部，留下base64内容
+            base64Data = reader.result.replace(/^data:audio\/\wav+;base64,/, "")
+            $.ajax({
+                    method: "POST",
+                    url: "lservice.php",
+                    data: {
+                        lang: language,
+                        audio: base64Data,
+                    },
+                })
+                .done(function(msg) {
+                    data=JSON.parse(msg);
+                    baidu=JSON.parse(data['baidu']);
+                    xunfei=JSON.parse(data['xunfei'])
+                    $(".messages").html(
+                        "results: <br /> baidu:" + baidu['data'] + 
+                        '<br /> xunfei:'+ xunfei['data'] +
+                        '<br /> caozuo:'+ data['caozuo']
+                        );
+                    console.log(baidu);
+                    console.log(xunfei);
+                })
+                .fail(function() {
+                    $(".messages").html("server error");
+                })
+                .always(function() {
+                    //alert( "complete" );
+                    //$( ".error" ).html("tra complete!");
+                });
+        }
 
-function downloadRecord(record) {
+    }
+    $(".messages").html("loading~");
+    toBackend(voice.blob);
+}
+
+
+// *************************
+//      button control
+// *************************
+function down() {
+    // console.log("down!!");
+    startRecording();
+}
+
+function up() {
+    // console.log("up!!");
+    stopRecording();
+    ASR();
+}
+
+function getlanguage() {
+    language=$('input[name="language"]:checked').val();
+}
+
+// *************************
+//      for debugging
+// *************************
+function obtainRecord() {
     function fake_click(obj) {
         var ev = document.createEvent('MouseEvents');
         ev.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
@@ -50,14 +105,25 @@ function downloadRecord(record) {
         var str = now.toDateString();
     }
 
-    var save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a')
-    save_link.href = URL.createObjectURL(record);
-    var now = new Date;
-    save_link.download = now.Format("yyyyMMddhhmmss");
-    fake_click(save_link);
-}
+    function downloadRecord(record) {
+        var save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a')
+        save_link.href = URL.createObjectURL(record);
+        var now = new Date;
+        save_link.download = now.Format("yyyyMMddhhmmss");
+        fake_click(save_link);
+    }
 
-
+    if (!voice) {
+        showError("请先开始录音");
+        return;
+    }
+    var record = voice;
+    if (record.duration !== 0) {
+        downloadRecord(record.blob);
+    } else {
+        showError("请先开始录音")
+    }
+};
 
 function play() {
     if (!voice) {
@@ -86,7 +152,9 @@ function showError(msg) {
 
 
 
-// recording part 
+// *************************
+//     recording part
+// ************************* 
 (function(window) {
     //兼容  
     window.URL = window.URL || window.webkitURL;
@@ -95,7 +163,7 @@ function showError(msg) {
     var HZRecorder = function(stream, config) {
         config = config || {};
         config.sampleBits = config.sampleBits || 16; //采样数位 8, 16  
-        config.sampleRate = config.sampleRate || 16000 ; //采样率(1/6 44100)  
+        config.sampleRate = config.sampleRate || 16000; //采样率(1/6 44100)  
 
 
         //创建一个音频环境对象  
@@ -322,6 +390,7 @@ function showError(msg) {
     };
     window.HZRecorder = HZRecorder;
 })(window);
+
 
 Date.prototype.Format = function(fmt) { //author: meizz 
     var o = {

@@ -4,6 +4,7 @@ import json
 import hashlib
 import base64
 import time
+import jieba
 
 from urllib.request import urlopen
 from urllib.request import Request
@@ -126,23 +127,216 @@ def xunfei_voice(audio):
     else:
         raise DemoError(result)
 
+def convert_to_instruction(sentence):
+    def deal_qiehuan(sentence):
+        if sentence.count('模式'):
+            return deal_moshi(sentence)
+        elif sentence.count('主结构'):
+            return deal_zhujiegou(sentence)
+        elif sentence.count("配体"):
+            return deal_peiti(sentence)
+        elif sentence.count("拖") or sentence.count('拽'):
+            return 71
+        elif sentence.count("标签"):
+            return 72
+        return 0
+
+    def deal_xianshi(sentence):
+        if sentence.count('主') or sentence.count('结构'):
+            return 29
+        elif sentence.count('表') or sentence.count('面'):
+            return 54
+        elif sentence.count('配') or sentence.count('体'):
+            return 36
+        elif sentence.count('水') or sentence.count('分子'):
+            return 41
+        elif sentence.count('氢') or sentence.count('键'):
+            return 43
+        elif sentence.count('突') or sentence.count('变'):
+            return 45
+        return 0
+
+    def deal_yincang(sentence):
+        if sentence.count('主') or sentence.count('结构'):
+            return 28
+        elif sentence.count('表') or sentence.count('面'):
+            return 53
+        elif sentence.count('配') or sentence.count('体'):
+            return 35
+        elif sentence.count('水') or sentence.count('分子'):
+            return 42
+        elif sentence.count('氢') or sentence.count('键'):
+            return 44
+        elif sentence.count('突') or sentence.count('变'):
+            return 46
+        return 0
+
+    def deal_biaomian(sentence):
+        if sentence.count('透明'):
+            return 51
+        elif sentence.count('网格'):
+            return 52
+        elif sentence.count('隐藏'):
+            return 53
+        elif sentence.count('显示'):
+            return 54
+        return 0
+    def deal_anzhao(sentence):
+        if sentence.count('元素'):
+            return 61
+        elif sentence.count('氨基酸'):
+            return 62
+        elif sentence.count('二级') or sentence.count('结构'):
+            return 63
+        elif sentence.count('链'):
+            return 64
+        elif sentence.count('因') or sentence.count('子'):
+            return 65
+        elif sentence.count('谱'):
+            return 66
+        elif sentence.count('水') or sentence.count('疏'):
+            return 67
+        elif sentence.count('保守'):
+            return 68
+        return 0
+    def deal_moshi(sentence):
+        if sentence.count('桌面'):
+            return 11
+        elif sentence.count('虚拟') or sentence.count("现实"):
+            return 12
+        elif sentence.count('遨游'):
+            return 13
+        return 0
+    def deal_zhujiegou(sentence):
+        if sentence.count('线'):
+            return 20
+        elif sentence.count('点'):
+            return 21
+        elif sentence.count('链'):
+            return 22
+        elif sentence.count('球棍'):
+            return 25
+        elif sentence.count('球'):
+            return 23
+        elif sentence.count('棍'):
+            return 24
+        elif sentence.count('钢') or sentence.count('丝'):
+            return 26
+        elif sentence.count('二') or sentence.count('2'):
+            return 27
+        elif sentence.count('显示'):
+            return 28
+        elif sentence.count('隐藏'):
+            return 29
+        return 0
+
+    def deal_peiti(sentence):
+        if sentence.count('线'):
+            return 31
+        elif sentence.count('球棍'):
+            return 34
+        elif sentence.count('球'):
+            return 32
+        elif sentence.count('棍'):
+            return 33
+        elif sentence.count('显示'):
+            return 35
+        elif sentence.count('隐藏'):
+            return 36
+        return 0
+
+    def deal_jiaohu(sentence,word_list):
+        for word in word_list:
+            if word=='拖拽':
+                return 71
+            elif word=='标签':
+                return 72
+            elif word=='旋转' or word=='转':
+                return deal_zhuan(sentence)
+            elif word=='动' or word=='移动':
+                return deal_dong(sentence)
+        return 0
+
+    def deal_zhuan(sentence):
+        if sentence.count('轴'):
+            if sentence.count('横'):
+                return 741
+            elif sentence.count('纵'):
+                return 742
+            elif sentence.count('竖'):
+                return 743
+        elif sentence.count('顺'):
+            return 75
+        elif sentence.count('逆'):
+            return 76
+        return 73
+
+    def deal_dong(sentence):
+        return 0
+
+
+    word_list = jieba.lcut(sentence)
+
+    for word in word_list:
+        if word=='切换':
+            return deal_qiehuan(sentence)
+        elif word=='显示':
+            return deal_xianshi(sentence)
+        elif word=='隐藏':
+            return deal_yincang(sentence)
+        elif word=='表面':
+            return deal_biaomian(sentence)
+        elif word=='按照':
+            return deal_anzhao(sentence)
+        elif word=='模式':
+            return deal_moshi(sentence)
+        elif word=='着色':
+            return deal_anzhao(sentence)
+        else:
+            tmp=deal_jiaohu(sentence,word_list)
+            if tmp!=0:
+                return tmp
+
+    return 0
+
+
+
+
 
 # set for Chinese(只在php调用python脚本时使用，python单独运行时需注释掉)
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 language = sys.argv[1]
 
 f = open('x.base64', 'r')
 audiostr = f.readlines()[0].strip()
 
 try:
-    tmp = baidu_voice(audiostr)
-    print("data: ",tmp)
+    sentence = baidu_voice(audiostr)
+    # out = jieba.lcut(sentence)
+    baidu_result={'state':0, 'data':sentence}
 except DemoError as err:
-    print("error: ",err.errorinfo)
+    # print("error: ",err.errorinfo)
+    baidu_result = {'state': 1, 'error': err.errorinfo}
+
 
 try:
-    tmp = xunfei_voice(audiostr)
-    print("data: ",tmp)
+    sentence = xunfei_voice(audiostr)
+    # out = jieba.lcut(sentence)
+    # convert_to_instruction(sentence)
+    xunfei_result = {'state': 0, 'data': sentence}
 except DemoError as err:
-    print("error: ",err.errorinfo)
+    # print("error: ",err.errorinfo)
+    xunfei_result = {'state': 1, 'error': err.errorinfo}
+
+print(json.dumps(baidu_result))
+print(json.dumps(xunfei_result))
+
+combine_sentence=""
+if baidu_result['state']==0:
+    combine_sentence+=baidu_result['data']
+    combine_sentence+=','
+if xunfei_result['state']==0:
+    combine_sentence+=xunfei_result['data']
+print(convert_to_instruction(combine_sentence))
+
 
