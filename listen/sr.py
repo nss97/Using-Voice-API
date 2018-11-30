@@ -18,17 +18,20 @@ class DemoError(Exception):
         super().__init__(self) #初始化父类
         self.errorinfo=ErrorInfo
 
-def baidu_voice(audio):
+def baidu_voice(audio,language):
     # flags
     API_KEY = 'NgawfS7s6NzVeFreXyYHWU6H'
     SECRET_KEY = 'uvdyW57F7gCa817kmut4MGo9LTaPHBZw'
-    FORMAT = 'wav';  # 文件格式：文件后缀只支持 pcm/wav/amr
-    DEV_PID = 1536;  # 根据文档填写PID，选择语言及识别模型：1536表示识别普通话，使用搜索模型.1737 english
-    CUID = '123456jwefjoefjoej';
-    RATE = 16000;  # 采样率：固定值
+    FORMAT = 'wav'  # 文件格式：文件后缀只支持 pcm/wav/amr
+    CUID = '123456jwefjoefjoej'
+    RATE = 16000  # 采样率：固定值
     ASR_URL = 'http://vop.baidu.com/server_api'
     TOKEN_URL = 'http://openapi.baidu.com/oauth/2.0/token'
     SCOPE = 'audio_voice_assistant_get'  # 有此scope表示有asr能力，没有请在网页里勾选
+    if language=='Chinese':
+        DEV_PID = 1536  # 根据文档填写PID，选择语言及识别模型：1536表示识别普通话，使用搜索模型.1737 english
+    else:
+        DEV_PID = 1737
 
     def fetch_token():
         # 生成token请求
@@ -56,6 +59,8 @@ def baidu_voice(audio):
         else:
             raise DemoError(
                 'MAYBE API_KEY or SECRET_KEY not correct: access_token or scope not found in token response')
+
+
 
     def convert(token, audio):
         length = len(base64.urlsafe_b64decode(audio))
@@ -91,14 +96,19 @@ def baidu_voice(audio):
             raise DemoError(result)
 
     token = fetch_token()
-    return convert(token, audio)
+    result=convert(token, audio)
+    return result
 
 
-def xunfei_voice(audio):
+def xunfei_voice(audio,language):
     url = 'http://api.xfyun.cn/v1/service/v1/iat'
     api_key = '905183e09e5f792c4cdf4e24cf8a8a4d'  # api key在这里
     x_appid = '5be15d7d'  # appid在这里
-    param = {"engine_type": "sms16k", "aue": "raw"}  # 普通话(sms16k),普通话(sms8k),英语(sms-en8k),英语(sms-en16k)
+    if language=='Chinese' or :
+        lang="sms16k"
+    else:
+        lang="sms-en16k"
+    param = {"engine_type": lang, "aue": "raw"}  # 普通话(sms16k),普通话(sms8k),英语(sms-en8k),英语(sms-en16k)
     x_time = int(int(round(time.time() * 1000)) / 1000)
 
     # get checksum
@@ -121,13 +131,13 @@ def xunfei_voice(audio):
         raise DemoError("Cannot get asr from xunfei, response error" + str(err.code))
 
     result = json.loads(result)
-    # print(result)
-    if ('data' in result.keys()):
+    # print("nanana",result)
+    if (result['desc']=='success'):
         return result['data']
     else:
         raise DemoError(result)
 
-def convert_to_instruction(sentence):
+def convert_chinese_to_instruction(sentence):
     def deal_qiehuan(sentence):
         if sentence.count('模式'):
             return deal_moshi(sentence)
@@ -190,7 +200,7 @@ def convert_to_instruction(sentence):
             return 63
         elif sentence.count('链'):
             return 64
-        elif sentence.count('因') or sentence.count('子'):
+        elif sentence.count('因') or sentence.count('子') or sentence.count('b'):
             return 65
         elif sentence.count('谱'):
             return 66
@@ -251,9 +261,14 @@ def convert_to_instruction(sentence):
                 return 71
             elif word=='标签':
                 return 72
+            elif word=='停止' or word =="停":
+                if sentence.count('转'):
+                    return 701
+                else:
+                    return 702
             elif word=='旋转' or word=='转':
                 return deal_zhuan(sentence)
-            elif word=='动' or word=='移动':
+            elif word=='移动' or sentence.count('移'):
                 return deal_dong(sentence)
         return 0
 
@@ -266,13 +281,28 @@ def convert_to_instruction(sentence):
             elif sentence.count('竖'):
                 return 743
         elif sentence.count('顺'):
-            return 75
+            return 751
         elif sentence.count('逆'):
-            return 76
+            return 752
+        elif sentence.count('停') or sentence.count('止'):
+            return 701
         return 73
 
     def deal_dong(sentence):
-        return 0
+        if sentence.count('轴'):
+            if sentence.count('横'):
+                return 771
+            elif sentence.count('纵'):
+                return 772
+            elif sentence.count('竖'):
+                return 773
+        elif sentence.count('正'):
+            return 781
+        elif sentence.count('反'):
+            return 782
+        elif sentence.count('停') or sentence.count('止'):
+            return 702
+        return 76
 
 
     word_list = jieba.lcut(sentence)
@@ -296,9 +326,28 @@ def convert_to_instruction(sentence):
             tmp=deal_jiaohu(sentence,word_list)
             if tmp!=0:
                 return tmp
+    if sentence.count("主结构"):
+        return deal_zhujiegou(sentence)
+    elif sentence.count("配体"):
+        return deal_peiti(sentence)
 
     return 0
 
+def convert_english_to_instruction(sentence):
+    print(sentence)
+    word_set=set(jieba.lcut(sentence))
+    if ('change' in word_set) or ('changed' in word_set):
+        return deal_change(word_set)
+    elif 'show' in word_set:
+        return deal_show(word_set)
+    elif 'hide' in word_set:
+        return deal_hide(word_set)
+    elif 'surface' in word_set:
+        return deal_surface(word_set)
+    elif 'color' in word_set:
+        return deal_color(word_set)
+
+    print(word_set)
 
 
 
@@ -310,26 +359,29 @@ language = sys.argv[1]
 f = open('x.base64', 'r')
 audiostr = f.readlines()[0].strip()
 
+import time
+time1=time.time()
+
 try:
-    sentence = baidu_voice(audiostr)
+    sentence = baidu_voice(audiostr,language)
     # out = jieba.lcut(sentence)
     baidu_result={'state':0, 'data':sentence}
 except DemoError as err:
     # print("error: ",err.errorinfo)
     baidu_result = {'state': 1, 'error': err.errorinfo}
 
+time2=time.time()
 
 try:
-    sentence = xunfei_voice(audiostr)
-    # out = jieba.lcut(sentence)
-    # convert_to_instruction(sentence)
+    sentence = xunfei_voice(audiostr,language)
     xunfei_result = {'state': 0, 'data': sentence}
 except DemoError as err:
-    # print("error: ",err.errorinfo)
     xunfei_result = {'state': 1, 'error': err.errorinfo}
 
 print(json.dumps(baidu_result))
 print(json.dumps(xunfei_result))
+
+time3=time.time()
 
 combine_sentence=""
 if baidu_result['state']==0:
@@ -337,6 +389,14 @@ if baidu_result['state']==0:
     combine_sentence+=','
 if xunfei_result['state']==0:
     combine_sentence+=xunfei_result['data']
-print(convert_to_instruction(combine_sentence))
+
+if language=="Chinese" or language=='chinese':
+    print(convert_chinese_to_instruction(combine_sentence))
+else:
+    # convert_english_to_instruction(combine_sentence)
+    print(combine_sentence)
+
+time4=time.time()
+
 
 

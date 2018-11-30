@@ -48,22 +48,30 @@ function ASR() {
                 .done(function(msg) {
                     data=JSON.parse(msg);
                     baidu=JSON.parse(data['baidu']);
-                    xunfei=JSON.parse(data['xunfei'])
-                    $(".messages").html(
-                        "results: <br /> baidu:" + baidu['data'] + 
-                        '<br /> xunfei:'+ xunfei['data'] +
-                        '<br /> caozuo:'+ data['caozuo']
-                        );
+                    xunfei=JSON.parse(data['xunfei']);
                     console.log(baidu);
                     console.log(xunfei);
+                    if(baidu['state']==0){
+                        baiduMessage=baidu['data'];
+                    }
+                    else{
+                        baiduMessage=baidu['error']['err_msg'];
+                    }
+                    if(xunfei['state']==0){
+                        xunfeiMessage=xunfei['data'];
+                    }
+                    else{
+                        xunfeiMessage=xunfei['error']['err_msg'];
+                    }
+                    $(".messages").html(
+                        "results: <br /> baidu:" + baiduMessage + 
+                        '<br /> xunfei:'+ xunfeiMessage +
+                        '<br /> caozuo:'+ data['caozuo']
+                        );
                 })
                 .fail(function() {
                     $(".messages").html("server error");
                 })
-                .always(function() {
-                    //alert( "complete" );
-                    //$( ".error" ).html("tra complete!");
-                });
         }
 
     }
@@ -72,11 +80,26 @@ function ASR() {
 }
 
 
+Date.prototype.Format = function(fmt) { //author: meizz 
+    var o = {
+        "M+": this.getMonth() + 1, //月份 
+        "d+": this.getDate(), //日 
+        "h+": this.getHours(), //小时 
+        "m+": this.getMinutes(), //分 
+        "s+": this.getSeconds(), //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds() //毫秒 
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
+}
+
 // *************************
 //      button control
 // *************************
 function down() {
-    // console.log("down!!");
     startRecording();
 }
 
@@ -392,18 +415,3 @@ function showError(msg) {
 })(window);
 
 
-Date.prototype.Format = function(fmt) { //author: meizz 
-    var o = {
-        "M+": this.getMonth() + 1, //月份 
-        "d+": this.getDate(), //日 
-        "h+": this.getHours(), //小时 
-        "m+": this.getMinutes(), //分 
-        "s+": this.getSeconds(), //秒 
-        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
-        "S": this.getMilliseconds() //毫秒 
-    };
-    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
-    for (var k in o)
-        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
-    return fmt;
-}
