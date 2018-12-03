@@ -1,183 +1,107 @@
-// API part
-var recorder;
-var voice;
-var language="Chinese";
+var voiceControl={
+    recorder:null,
+    voice:null,
+    language:"Chinese",
+    debug:false,
+}
 
+// *************************
+//    Control functions
+// *************************
 
+// 开始录音  
 function startRecording() {
-    if (recorder) {
-        recorder.clear();
-        recorder.start();
+    if (voiceControl.recorder) {
+        voiceControl.recorder.clear();
+        voiceControl.recorder.start();
         return;
     }
-
     HZRecorder.get(function(rec) {
-        recorder = rec;
-        recorder.start();
-    }, {
-        error: showError
+        voiceControl.recorder = rec;
+        voiceControl.recorder.start();
     });
 }
 
-function stopRecording() {
-    if (recorder) {
-        recorder.stop();
-        voice = recorder.getBlob();
-        recorder.clear();
-    }
-}
-
-function ASR() {
+// 停止录音，并传送至后台处理，获取对应的指令编号
+function endrecording() {
     function toBackend(record) {
         // 文件转成base64传输
         var reader = new FileReader();
         reader.readAsDataURL(record);
-        // reader.readAsBinaryString(record); 转成二进制
         // 文件转换成功后加载
-        reader.onload = function() {
-            // 读取转出的DATAURL，去掉DATAURL的首部，留下base64内容
-            base64Data = reader.result.replace(/^data:audio\/\wav+;base64,/, "")
-            $.ajax({
-                    method: "POST",
-                    url: "lservice.php",
-                    data: {
-                        lang: language,
-                        audio: base64Data,
-                    },
-                })
-                .done(function(msg) {
-                    data=JSON.parse(msg);
-                    baidu=JSON.parse(data['baidu']);
-                    xunfei=JSON.parse(data['xunfei']);
-                    console.log(baidu);
-                    console.log(xunfei);
-                    if(baidu['state']==0){
-                        baiduMessage=baidu['data'];
-                    }
-                    else{
-                        baiduMessage=baidu['error']['err_msg'];
-                    }
-                    if(xunfei['state']==0){
-                        xunfeiMessage=xunfei['data'];
-                    }
-                    else{
-                        xunfeiMessage=xunfei['error']['err_msg'];
-                    }
-                    $(".messages").html(
-                        "results: <br /> baidu:" + baiduMessage + 
-                        '<br /> xunfei:'+ xunfeiMessage +
-                        '<br /> caozuo:'+ data['caozuo']
-                        );
-                })
-                .fail(function() {
-                    $(".messages").html("server error");
-                })
-        }
-
+        return new Promise(function(resolve) {
+            reader.onload = function() {
+                // 读取转出的DATAURL，去掉DATAURL的首部，留下base64内容
+                base64Data = reader.result.replace(/^data:audio\/\wav+;base64,/, "")
+                $.ajax({
+                        method: "POST",
+                        url: "lservice.php",
+                        data: {
+                            lang: voiceControl.language,
+                            audio: base64Data,
+                        },
+                    })
+                    .done(function(msg) {
+                        data = JSON.parse(msg);
+                        baidu = JSON.parse(data['baidu']);
+                        xunfei = JSON.parse(data['xunfei']);
+                        if (baidu['state'] == 0) {
+                            baiduMessage = baidu['data'];
+                        } else {
+                            baiduMessage = baidu['error']['err_msg'];
+                        }
+                        if (xunfei['state'] == 0) {
+                            xunfeiMessage = xunfei['data'];
+                        } else {
+                            xunfeiMessage = xunfei['error']['err_msg'];
+                        }
+                        if (voiceControl.debug) {
+                            console.log(baidu);
+                            console.log(xunfei);
+                            $(".messages").html(
+                                "results: <br /> baidu:" + baiduMessage +
+                                '<br /> xunfei:' + xunfeiMessage +
+                                '<br /> caozuo:' + data['caozuo']
+                            );
+                        } else {
+                            $(".messages").html("done");
+                        }
+                        resolve(data['caozuo']);
+                    })
+                    .fail(function() {
+                        $(".messages").html("server error");
+                    })
+            }
+        })
+    }
+    if (voiceControl.recorder) {
+        voiceControl.recorder.stop();
+        voiceControl.voice = voiceControl.recorder.getBlob();
+        voiceControl.recorder.clear();
     }
     $(".messages").html("loading~");
-    toBackend(voice.blob);
+    toBackend(voiceControl.voice.blob).then(function callback_for_vr(value) {
+        console.log(value);
+        // *****************************************************************************************
+        //
+        // TODO(xujingle 2018-11-30)::添加对于VR的操作？
+        // value 为得到的命令编码值
+        //
+        //
+        // ******************************************************************************************
+        }
+    );
 }
 
-
-Date.prototype.Format = function(fmt) { //author: meizz 
-    var o = {
-        "M+": this.getMonth() + 1, //月份 
-        "d+": this.getDate(), //日 
-        "h+": this.getHours(), //小时 
-        "m+": this.getMinutes(), //分 
-        "s+": this.getSeconds(), //秒 
-        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
-        "S": this.getMilliseconds() //毫秒 
-    };
-    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
-    for (var k in o)
-        if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
-    return fmt;
-}
-
-// *************************
-//      button control
-// *************************
-function down() {
-    startRecording();
-}
-
-function up() {
-    // console.log("up!!");
-    stopRecording();
-    ASR();
-}
-
+// 修改语言设置
 function getlanguage() {
-    language=$('input[name="language"]:checked').val();
+    voiceControl.language = $('input[name="language"]:checked').val();
 }
-
-// *************************
-//      for debugging
-// *************************
-function obtainRecord() {
-    function fake_click(obj) {
-        var ev = document.createEvent('MouseEvents');
-        ev.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        obj.dispatchEvent(ev);
-    }
-
-    function getStr() {
-        var now = new Date;
-        var str = now.toDateString();
-    }
-
-    function downloadRecord(record) {
-        var save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a')
-        save_link.href = URL.createObjectURL(record);
-        var now = new Date;
-        save_link.download = now.Format("yyyyMMddhhmmss");
-        fake_click(save_link);
-    }
-
-    if (!voice) {
-        showError("请先开始录音");
-        return;
-    }
-    var record = voice;
-    if (record.duration !== 0) {
-        downloadRecord(record.blob);
-    } else {
-        showError("请先开始录音")
-    }
-};
-
-function play() {
-    if (!voice) {
-        showError("请先录音");
-        return;
-    }
-
-    var data = voice;
-    if (data.duration == 0) {
-        showError("请先终止录音");
-        return;
-    }
-    recorder.clear();
-    console.log(data);
-    recorder.play(document.querySelector('audio'), data.blob);
-}
-
-function showError(msg) {
-    var ct;
-    $(".error").html(msg);
-    clearTimeout(ct);
-    ct = setTimeout(function() {
-        $(".error").html("")
-    }, 3000);
-}
-
-
 
 // *************************
 //     recording part
 // ************************* 
+// 加载音频库
 (function(window) {
     //兼容  
     window.URL = window.URL || window.webkitURL;
@@ -413,5 +337,6 @@ function showError(msg) {
     };
     window.HZRecorder = HZRecorder;
 })(window);
+
 
 

@@ -19,48 +19,11 @@ class DemoError(Exception):
         self.errorinfo=ErrorInfo
 
 def baidu_voice(audio,language):
-    # flags
-    API_KEY = 'NgawfS7s6NzVeFreXyYHWU6H'
-    SECRET_KEY = 'uvdyW57F7gCa817kmut4MGo9LTaPHBZw'
-    FORMAT = 'wav'  # 文件格式：文件后缀只支持 pcm/wav/amr
-    CUID = '123456jwefjoefjoej'
-    RATE = 16000  # 采样率：固定值
+    FORMAT = 'wav';  # 文件格式：文件后缀只支持 pcm/wav/amr
+    DEV_PID = 1536;  # 根据文档填写PID，选择语言及识别模型：1536表示识别普通话，使用搜索模型.1737 english
+    CUID = '123456jwefjoefjoej';
+    RATE = 16000;  # 采样率：固定值
     ASR_URL = 'http://vop.baidu.com/server_api'
-    TOKEN_URL = 'http://openapi.baidu.com/oauth/2.0/token'
-    SCOPE = 'audio_voice_assistant_get'  # 有此scope表示有asr能力，没有请在网页里勾选
-    if language=='Chinese':
-        DEV_PID = 1536  # 根据文档填写PID，选择语言及识别模型：1536表示识别普通话，使用搜索模型.1737 english
-    else:
-        DEV_PID = 1737
-
-    def fetch_token():
-        # 生成token请求
-        params = {'grant_type': 'client_credentials', 'client_id': API_KEY, 'client_secret': SECRET_KEY}
-        post_data = urlencode(params)
-        post_data = post_data.encode('utf-8')
-
-        # 请求token
-        req = Request(TOKEN_URL, post_data)
-
-        # 处理结果，提取access_token
-        try:
-            f = urlopen(req)
-            result_str = f.read()
-        except URLError as err:
-            # print('token http response http code : ' + str(err.code))
-            raise DemoError("Cannot get token from baidu, response error" + str(err.code))
-        result_str = result_str.decode()
-        result = json.loads(result_str)
-        if ('access_token' in result.keys() and 'scope' in result.keys()):
-            # if not SCOPE in result['scope'].split(' '):
-            #     raise DemoError('scope is not correct')
-            # print('SUCCESS WITH TOKEN: %s ; EXPIRES IN SECONDS: %s' % (result['access_token'], result['expires_in']))
-            return result['access_token']
-        else:
-            raise DemoError(
-                'MAYBE API_KEY or SECRET_KEY not correct: access_token or scope not found in token response')
-
-
 
     def convert(token, audio):
         length = len(base64.urlsafe_b64decode(audio))
@@ -95,7 +58,9 @@ def baidu_voice(audio,language):
             # print(result)
             raise DemoError(result)
 
-    token = fetch_token()
+    with open('util/token.txt', 'r') as f:
+        token=f.read()
+    # print(token)
     result=convert(token, audio)
     return result
 
@@ -104,7 +69,7 @@ def xunfei_voice(audio,language):
     url = 'http://api.xfyun.cn/v1/service/v1/iat'
     api_key = '905183e09e5f792c4cdf4e24cf8a8a4d'  # api key在这里
     x_appid = '5be15d7d'  # appid在这里
-    if language=='Chinese' or :
+    if language=='Chinese' or language=='chinese':
         lang="sms16k"
     else:
         lang="sms-en16k"
