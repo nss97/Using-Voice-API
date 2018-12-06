@@ -1,10 +1,11 @@
-import io
 import sys
 import json
 import hashlib
 import base64
+import csv
+import io
 import time
-import jieba
+import re
 
 from urllib.request import urlopen
 from urllib.request import Request
@@ -14,11 +15,12 @@ from urllib.parse import urlencode
 
 class DemoError(Exception):
     # pass
-    def __init__(self,ErrorInfo):
-        super().__init__(self) #初始化父类
-        self.errorinfo=ErrorInfo
+    def __init__(self, ErrorInfo):
+        super().__init__(self)  # 初始化父类
+        self.errorinfo = ErrorInfo
 
-def baidu_voice(audio,language):
+
+def baidu_voice(audio, language):
     FORMAT = 'wav';  # 文件格式：文件后缀只支持 pcm/wav/amr
     DEV_PID = 1536;  # 根据文档填写PID，选择语言及识别模型：1536表示识别普通话，使用搜索模型.1737 english
     CUID = '123456jwefjoefjoej';
@@ -59,20 +61,20 @@ def baidu_voice(audio,language):
             raise DemoError(result)
 
     with open('util/token.txt', 'r') as f:
-        token=f.read()
+        token = f.read()
     # print(token)
-    result=convert(token, audio)
+    result = convert(token, audio)
     return result
 
 
-def xunfei_voice(audio,language):
+def xunfei_voice(audio, language):
     url = 'http://api.xfyun.cn/v1/service/v1/iat'
     api_key = '905183e09e5f792c4cdf4e24cf8a8a4d'  # api key在这里
     x_appid = '5be15d7d'  # appid在这里
-    if language=='Chinese' or language=='chinese':
-        lang="sms16k"
+    if language == 'Chinese' or language == 'chinese':
+        lang = "sms16k"
     else:
-        lang="sms-en16k"
+        lang = "sms-en16k"
     param = {"engine_type": lang, "aue": "raw"}  # 普通话(sms16k),普通话(sms8k),英语(sms-en8k),英语(sms-en16k)
     x_time = int(int(round(time.time() * 1000)) / 1000)
 
@@ -93,275 +95,111 @@ def xunfei_voice(audio,language):
         result = urlopen(req)
         result = result.read().decode('utf-8')
     except URLError as err:
+        # print(err)
         raise DemoError("Cannot get asr from xunfei, response error" + str(err.code))
 
     result = json.loads(result)
     # print("nanana",result)
-    if (result['desc']=='success'):
+    if (result['desc'] == 'success'):
         return result['data']
     else:
         raise DemoError(result)
 
-def convert_chinese_to_instruction(sentence):
-    def deal_qiehuan(sentence):
-        if sentence.count('模式'):
-            return deal_moshi(sentence)
-        elif sentence.count('主结构'):
-            return deal_zhujiegou(sentence)
-        elif sentence.count("配体"):
-            return deal_peiti(sentence)
-        elif sentence.count("拖") or sentence.count('拽'):
-            return 71
-        elif sentence.count("标签"):
-            return 72
-        return 0
 
-    def deal_xianshi(sentence):
-        if sentence.count('主') or sentence.count('结构'):
-            return 29
-        elif sentence.count('表') or sentence.count('面'):
-            return 54
-        elif sentence.count('配') or sentence.count('体'):
-            return 36
-        elif sentence.count('水') or sentence.count('分子'):
-            return 41
-        elif sentence.count('氢') or sentence.count('键'):
-            return 43
-        elif sentence.count('突') or sentence.count('变'):
-            return 45
-        return 0
-
-    def deal_yincang(sentence):
-        if sentence.count('主') or sentence.count('结构'):
-            return 28
-        elif sentence.count('表') or sentence.count('面'):
-            return 53
-        elif sentence.count('配') or sentence.count('体'):
-            return 35
-        elif sentence.count('水') or sentence.count('分子'):
-            return 42
-        elif sentence.count('氢') or sentence.count('键'):
-            return 44
-        elif sentence.count('突') or sentence.count('变'):
-            return 46
-        return 0
-
-    def deal_biaomian(sentence):
-        if sentence.count('透明'):
-            return 51
-        elif sentence.count('网格'):
-            return 52
-        elif sentence.count('隐藏'):
-            return 53
-        elif sentence.count('显示'):
-            return 54
-        return 0
-    def deal_anzhao(sentence):
-        if sentence.count('元素'):
-            return 61
-        elif sentence.count('氨基酸'):
-            return 62
-        elif sentence.count('二级') or sentence.count('结构'):
-            return 63
-        elif sentence.count('链'):
-            return 64
-        elif sentence.count('因') or sentence.count('子') or sentence.count('b'):
-            return 65
-        elif sentence.count('谱'):
-            return 66
-        elif sentence.count('水') or sentence.count('疏'):
-            return 67
-        elif sentence.count('保守'):
-            return 68
-        return 0
-    def deal_moshi(sentence):
-        if sentence.count('桌面'):
-            return 11
-        elif sentence.count('虚拟') or sentence.count("现实"):
-            return 12
-        elif sentence.count('遨游'):
-            return 13
-        return 0
-    def deal_zhujiegou(sentence):
-        if sentence.count('线'):
-            return 20
-        elif sentence.count('点'):
-            return 21
-        elif sentence.count('链'):
-            return 22
-        elif sentence.count('球棍'):
-            return 25
-        elif sentence.count('球'):
-            return 23
-        elif sentence.count('棍'):
-            return 24
-        elif sentence.count('钢') or sentence.count('丝'):
-            return 26
-        elif sentence.count('二') or sentence.count('2'):
-            return 27
-        elif sentence.count('显示'):
-            return 28
-        elif sentence.count('隐藏'):
-            return 29
-        return 0
-
-    def deal_peiti(sentence):
-        if sentence.count('线'):
-            return 31
-        elif sentence.count('球棍'):
-            return 34
-        elif sentence.count('球'):
-            return 32
-        elif sentence.count('棍'):
-            return 33
-        elif sentence.count('显示'):
-            return 35
-        elif sentence.count('隐藏'):
-            return 36
-        return 0
-
-    def deal_jiaohu(sentence,word_list):
-        for word in word_list:
-            if word=='拖拽':
-                return 71
-            elif word=='标签':
-                return 72
-            elif word=='停止' or word =="停":
-                if sentence.count('转'):
-                    return 701
+def convert_chinese_to_instruction(sentence, command):
+    def lcs(s1, s2):
+        l1 = len(s1)
+        l2 = len(s2)
+        if l1 <= 0 or l2 <= 0:
+            return 0
+        dp = [[0] * (l2 + 1) for j in range(l1 + 1)]
+        for i in range(1, l1 + 1):
+            for j in range(1, l2 + 1):
+                if (s1[i - 1] == s2[j - 1]):
+                    dp[i][j] = 1 + dp[i - 1][j - 1]
                 else:
-                    return 702
-            elif word=='旋转' or word=='转':
-                return deal_zhuan(sentence)
-            elif word=='移动' or sentence.count('移'):
-                return deal_dong(sentence)
-        return 0
+                    dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+        return dp[l1][l2]
 
-    def deal_zhuan(sentence):
-        if sentence.count('轴'):
-            if sentence.count('横'):
-                return 741
-            elif sentence.count('纵'):
-                return 742
-            elif sentence.count('竖'):
-                return 743
-        elif sentence.count('顺'):
-            return 751
-        elif sentence.count('逆'):
-            return 752
-        elif sentence.count('停') or sentence.count('止'):
-            return 701
-        return 73
-
-    def deal_dong(sentence):
-        if sentence.count('轴'):
-            if sentence.count('横'):
-                return 771
-            elif sentence.count('纵'):
-                return 772
-            elif sentence.count('竖'):
-                return 773
-        elif sentence.count('正'):
-            return 781
-        elif sentence.count('反'):
-            return 782
-        elif sentence.count('停') or sentence.count('止'):
-            return 702
-        return 76
-
-
-    word_list = jieba.lcut(sentence)
-
-    for word in word_list:
-        if word=='切换':
-            return deal_qiehuan(sentence)
-        elif word=='显示':
-            return deal_xianshi(sentence)
-        elif word=='隐藏':
-            return deal_yincang(sentence)
-        elif word=='表面':
-            return deal_biaomian(sentence)
-        elif word=='按照':
-            return deal_anzhao(sentence)
-        elif word=='模式':
-            return deal_moshi(sentence)
-        elif word=='着色':
-            return deal_anzhao(sentence)
+    def find_max(command_score, index):
+        maxm = 0
+        id = '0'
+        for i in command_score.keys():
+            if command_score[i][index] > maxm:
+                maxm = command_score[i][index]
+                id = i
+        if maxm >= 0.2:
+            return (maxm, id)
         else:
-            tmp=deal_jiaohu(sentence,word_list)
-            if tmp!=0:
-                return tmp
-    if sentence.count("主结构"):
-        return deal_zhujiegou(sentence)
-    elif sentence.count("配体"):
-        return deal_peiti(sentence)
+            return (1, '0')
 
-    return 0
+    command_score = {}
+    for i in command:
+        lcs_i = lcs(i[0], sentence)
+        command_name = i[1]
+
+        #     score_1 = lcs_i / max(len(i[0]), len(sentence))
+        #     score_2 = 2 * lcs_i / (len(i[0]) + len(sentence))
+        #     score_3 = lcs_i / (len(i[0]) + len(sentence) - lcs_i)
+        #
+        #     common_character = set(i[0]).intersection(set(sentence))
+        #     score_4 = len(common_character) / (len(i[0]) + len(sentence) - len(common_character))
+        #
+        #     command_score[command_name] = [score_1, score_2, score_3, score_4]
+        #
+        # return {1: find_max(command_score, 0),
+        #         2: find_max(command_score, 1),
+        #         3: find_max(command_score, 2),
+        #         4: find_max(command_score, 3)}
+
+        score = lcs_i / max(len(i[0]), len(sentence))
+        command_score[command_name] = score
+        max_score = max(zip(command_score.values(), command_score.keys()))
+        if max_score[0] >= 0.2:
+            return max_score
+        else:
+            return (1, '0')
+
 
 def convert_english_to_instruction(sentence):
-    print(sentence)
-    word_set=set(jieba.lcut(sentence))
-    if ('change' in word_set) or ('changed' in word_set):
-        return deal_change(word_set)
-    elif 'show' in word_set:
-        return deal_show(word_set)
-    elif 'hide' in word_set:
-        return deal_hide(word_set)
-    elif 'surface' in word_set:
-        return deal_surface(word_set)
-    elif 'color' in word_set:
-        return deal_color(word_set)
-
-    print(word_set)
-
-
+    return 0
 
 
 # set for Chinese(只在php调用python脚本时使用，python单独运行时需注释掉)
-# sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 language = sys.argv[1]
-
-f = open('x.base64', 'r')
+file_name = sys.argv[2]
+f = open('base64/' + file_name, 'r')
 audiostr = f.readlines()[0].strip()
 
-import time
-time1=time.time()
+csv_file = csv.reader(open('command.csv'))
+command = []
+for i in csv_file:
+    command.append(i)
 
 try:
-    sentence = baidu_voice(audiostr,language)
+    sentence = baidu_voice(audiostr, language)
     # out = jieba.lcut(sentence)
-    baidu_result={'state':0, 'data':sentence}
+    score = convert_chinese_to_instruction(sentence, command)
+    baidu_result = {'state': 0, 'data': sentence, 'score': score}
 except DemoError as err:
     # print("error: ",err.errorinfo)
     baidu_result = {'state': 1, 'error': err.errorinfo}
 
-time2=time.time()
-
 try:
-    sentence = xunfei_voice(audiostr,language)
-    xunfei_result = {'state': 0, 'data': sentence}
+    sentence = xunfei_voice(audiostr, language)
+    sentence = re.sub("[！，。？]", "", sentence)  # 去除标点
+    score = convert_chinese_to_instruction(sentence, command)
+    xunfei_result = {'state': 0, 'data': sentence, 'score': score}
 except DemoError as err:
     xunfei_result = {'state': 1, 'error': err.errorinfo}
 
 print(json.dumps(baidu_result))
 print(json.dumps(xunfei_result))
+print(0)  # 确定的操作值
 
-time3=time.time()
-
-combine_sentence=""
-if baidu_result['state']==0:
-    combine_sentence+=baidu_result['data']
-    combine_sentence+=','
-if xunfei_result['state']==0:
-    combine_sentence+=xunfei_result['data']
-
-if language=="Chinese" or language=='chinese':
-    print(convert_chinese_to_instruction(combine_sentence))
-else:
-    # convert_english_to_instruction(combine_sentence)
-    print(combine_sentence)
-
-time4=time.time()
-
-
-
+# if language=="Chinese" or language=='chinese':
+#     print()
+# else:
+#     # convert_english_to_instruction(combine_sentence)
+#     print(combine_sentence)

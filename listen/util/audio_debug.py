@@ -1,6 +1,6 @@
 import base64
 
-name="x.base64"
+name="../base64/1206141541_75.base64"
 file="voice.wav"
 
 with open(name, 'r') as fileObj:

@@ -4,8 +4,11 @@
     <script src="jquery-3.2.1.min.js"></script>
     <script src="recorder.js"></script>
     <body>
+        <button class="test" onmousedown="startRecording()">down</button>
+        <button class="test" onmouseup="endRecording()">up</button>
+        
         <div class="messages"></div>
-        <button class="test" onmousedown="startRecording()" onmouseup="endrecording()">一键操作</button>
+        <button class="test" onmousedown="startRecording()" onmouseup="endRecording()">一键操作</button>
         <br>
         <input name="language" value="Chinese" type="radio" id="Chinese" onclick="getlanguage()" checked="true">
         <label for="Chinese">中文语音</label>

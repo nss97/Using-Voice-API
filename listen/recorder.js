@@ -2,7 +2,7 @@ var voiceControl={
     recorder:null,
     voice:null,
     language:"Chinese",
-    debug:false,
+    debug:true,
 }
 
 // *************************
@@ -23,7 +23,7 @@ function startRecording() {
 }
 
 // 停止录音，并传送至后台处理，获取对应的指令编号
-function endrecording() {
+function endRecording() {
     function toBackend(record) {
         // 文件转成base64传输
         var reader = new FileReader();
@@ -42,6 +42,7 @@ function endrecording() {
                         },
                     })
                     .done(function(msg) {
+                        console.log(msg)
                         data = JSON.parse(msg);
                         baidu = JSON.parse(data['baidu']);
                         xunfei = JSON.parse(data['xunfei']);
@@ -258,7 +259,7 @@ function getlanguage() {
         this.stop = function() {
             recorder.disconnect();
             //清理缓存音频
-            console.log("stoped", audioData.buffer.length)
+            // console.log("stoped", audioData.buffer.length)
             return audioData.buffer.length;
         };
 
