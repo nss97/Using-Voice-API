@@ -51,4 +51,57 @@
 反向移动
 停止旋转
 停止移动
+go to desktop mode
+go to virtual reality mode
+go to travel mode
+change to line style
+change to dot style
+change to backbone style
+change to sphere style
+change to stick style
+change to ball and rod style
+change to tube style
+change to second structure style
+hide main structure
+show main structure
+change ligand to line style
+change ligand to shpere style
+change ligand to stick style
+change ligand to ball and rod style
+hide ligand structure
+show ligand structure
+show water 
+hide water
+show hydrogen bond
+hide hydrogen bond
+show mutation
+hide mutation
+show transparency
+show mesh
+hide the surface
+show the surface
+color by element
+color by residue
+color by second structure
+color by chain
+color by b-factor
+color by spectrum
+color by hydrophobicity
+color by conservation
+open dragging function
+open labeling function
+rotation
+rotation by x
+rotation by y
+rotation by z
+clockwise rotation
+anticlockwise rotation
+move
+move along x
+move along y
+move along z
+move forward
+move backward
+stop rotation
+stop move
 

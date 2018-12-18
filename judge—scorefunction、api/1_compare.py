@@ -1,3 +1,5 @@
+import csv
+
 def cal_score(sentence, command):
     def lcs(s1, s2):
         l1 = len(s1)
@@ -16,11 +18,15 @@ def cal_score(sentence, command):
     def find_max(command_score, index):
         maxm = 0
         id = '0'
+        count =0
         for i in command_score.keys():
             if command_score[i][index] > maxm:
                 maxm = command_score[i][index]
                 id = i
-        if maxm >= 0.2:
+                count=1
+            elif command_score[i][index] == maxm:
+                count+=1
+        if maxm >= 0.2 and count<2:
             return (maxm, id)
         else:
             return (1, '0')
@@ -48,11 +54,14 @@ csv_file = csv.reader(open('command.csv'))
 command = []
 for i in csv_file:
     command.append(i)
+# print(command)
+# input()
 
 csv_file = csv.reader(open('result.csv'))
 result = []
 for i in csv_file:
     result.append(i)
+
 
 output = []
 for i in result:
@@ -64,6 +73,8 @@ for i in result:
         if j[1] == answer:
             out.append(1)
         else:
+            print(j,i)
+
             out.append(0)
 
     xunfei = cal_score(i[3], command)
@@ -78,6 +89,6 @@ for i in result:
 import pandas
 
 data = pandas.DataFrame(output,
-                        columns={'id', 'v', 'baidu1', 'baidu2', 'baidu3', 'baidu4', 'xunfei1', 'xunfei2', 'xunfei3',
-                                 'xunfei4'})
+                        columns=['id', 'v', 'baidu1', 'baidu2', 'baidu3', 'baidu4', 'xunfei1', 'xunfei2', 'xunfei3',
+                                 'xunfei4'])
 data.to_csv('judge_right_or_wrong.csv')
