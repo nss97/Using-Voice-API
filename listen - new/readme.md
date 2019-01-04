@@ -1,10 +1,15 @@
 使用方式：按住button，说对应指令，然后松开button
 
 前端debug方式：
-1）在recorder.js中， 将voiceControl的debug值设为true，即可在页面中显示百度和讯飞得到的返回值，以及对应的指令编码
-2）在listen目录下运行‘python util/audio_debug.py’（注意需要修改脚本中文件的名称），生成的voice.wav即为原始音频
+在recorder.js中， 将voiceControl的debug值设为true，即可在页面中显示百度和讯飞得到的返回值，以及对应的指令编码
 
-后端debug方式：listen目录下运行 ‘python sr.py Chinese 音频base64文件名’
+1月：
+1、修改中文打分方式，添加词林比较近义词。
+2、修改音频保存方式。改为在python中保存wav
+3、添加log
+4、修改文件夹结构
+
+
 
 12.13：
 1、添加英文判断

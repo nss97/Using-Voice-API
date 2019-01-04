@@ -64,7 +64,7 @@ def baidu_voice(audio, language):
         else:
             raise DemoError(result)
 
-    with open('token.txt', 'r') as f:
+    with open('static-data/token.txt', 'r') as f:
         token = f.read()
         f.close()
     # print(token)
@@ -110,19 +110,21 @@ def xunfei_voice(audio, language):
     else:
         raise DemoError(result)
 
+
 import codecs
 import jieba.posseg as pseg
+
 
 class SimCilin:
 
     def __init__(self):
-        self.cilin_path = 'cilin.txt'
+        self.cilin_path = 'static-data/cilin.txt'
         self.sem_dict = self.load_semantic()
 
     # 加载词林
     def load_semantic(self):
         sem_dict = {}
-        for line in codecs.open(self.cilin_path,encoding='utf-8'):
+        for line in codecs.open(self.cilin_path, encoding='utf-8'):
             line = line.strip().split(' ')
             sem_type = line[0]
             words = line[1:]
@@ -138,34 +140,33 @@ class SimCilin:
 
     # 基于计算编码相似度
     def compute_sem(self, sem1, sem2):
-        def search(sem_list1,sem_list2):
+        def search(sem_list1, sem_list2):
             for i in range(6):
-                if sem_list1[i]!=sem_list2[i]:
+                if sem_list1[i] != sem_list2[i]:
                     return i
 
         sem1 = [sem1[0], sem1[1], sem1[2:4], sem1[4], sem1[5:7], sem1[-1]]
         sem2 = [sem2[0], sem2[1], sem2[2:4], sem2[4], sem2[5:7], sem2[-1]]
-        dif_index=search(sem1,sem2)
-        if dif_index==0:
-            return 1/10
-        elif dif_index==1:
-            return 1/8
-        elif dif_index==2:
-            return 1/6
-        elif dif_index==3:
-            return 1/4
-        elif dif_index==4:
-            return 1/2
+        dif_index = search(sem1, sem2)
+        if dif_index == 0:
+            return 1 / 10
+        elif dif_index == 1:
+            return 1 / 8
+        elif dif_index == 2:
+            return 1 / 6
+        elif dif_index == 3:
+            return 1 / 4
+        elif dif_index == 4:
+            return 1 / 2
         else:
-            if sem1[5]=='=':
+            if sem1[5] == '=':
                 return 0
             else:
                 return 0.5
 
-
     # 计算词语之间的相似度,取各种编码组合可能最大值
-    def compute_word_sim(self, word1 , word2):
-        if(word1==word2):
+    def compute_word_sim(self, word1, word2):
+        if (word1 == word2):
             return 1
         sems_word1 = self.sem_dict.get(word1, [])
         sems_word2 = self.sem_dict.get(word2, [])
@@ -188,15 +189,16 @@ class SimCilin:
         for word2 in words2:
             score = max(self.compute_word_sim(word2, word1) for word1 in words1)
             score_words2.append(score)
-        similarity = (sum(score_words1)/len(words1)+ sum(score_words2)/len(words2))/2
+        similarity = (sum(score_words1) / len(words1) + sum(score_words2) / len(words2)) / 2
         # print(words1,words2,similarity)
         return similarity
+
 
 def convert_chinese_to_instruction(sentence, command):
     def find_max(command_score):
         maxm = 0
         id = '0'
-        count =0
+        count = 0
         for i in command_score.keys():
             if command_score[i] > maxm:
                 maxm = command_score[i]
@@ -204,7 +206,7 @@ def convert_chinese_to_instruction(sentence, command):
                 count = 1
             elif command_score[i] == maxm:
                 count += 1
-        if maxm >= 0.2 and count<2:
+        if maxm >= 0.2 and count < 2:
             return (maxm, id)
         else:
             return (1, '0')
@@ -219,8 +221,7 @@ def convert_chinese_to_instruction(sentence, command):
     return find_max(command_score)
 
 
-
-def convert_english_to_instruction(sentence,command):
+def convert_english_to_instruction(sentence, command):
     def lcs(s1, s2):
         l1 = len(s1)
         l2 = len(s2)
@@ -238,7 +239,7 @@ def convert_english_to_instruction(sentence,command):
     def find_max(command_score):
         maxm = 0
         id = '0'
-        count =0
+        count = 0
         for i in command_score.keys():
             if command_score[i] > maxm:
                 maxm = command_score[i]
@@ -247,7 +248,7 @@ def convert_english_to_instruction(sentence,command):
             elif command_score[i] == maxm:
                 count += 1
         # print(maxm,count)
-        if maxm >= 0.2 and count<2:
+        if maxm >= 0.2 and count < 2:
             return (maxm, id)
         else:
             return (1, '0')
@@ -256,7 +257,7 @@ def convert_english_to_instruction(sentence,command):
     for i in command:
         lcs_i = lcs(i[1], sentence)
         command_name = i[2]
-        score = lcs_i / (len(i[1])+ len(sentence))
+        score = lcs_i / (len(i[1]) + len(sentence))
         # print(i,score,lcs_i)
         command_score[command_name] = score
 
@@ -266,11 +267,10 @@ def convert_english_to_instruction(sentence,command):
 # set for Chinese(只在php调用python脚本时使用，python单独运行时需注释掉)
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 language = sys.argv[1]
-file_name = sys.argv[2]
-f = open('base64/' + file_name, 'r')
+f = open('static-data/x.base64', 'r')
 audiostr = f.readlines()[0].strip()
 
-csv_file = csv.reader(open('command.csv'))
+csv_file = csv.reader(open('static-data/command.csv'))
 command = []
 for i in csv_file:
     command.append(i)
@@ -278,7 +278,7 @@ for i in csv_file:
 try:
     sentence = baidu_voice(audiostr, language)
     score = convert_chinese_to_instruction(sentence, command)
-    if language=="Chinese" or language=='chinese':
+    if language == "Chinese" or language == 'chinese':
         score = convert_chinese_to_instruction(sentence, command)
     else:
         score = convert_english_to_instruction(sentence, command)
@@ -312,21 +312,30 @@ except DemoError as err:
 #     xunfei_result = {'state': 1, 'error': err.errorinfo}
 #############################################################################
 print(json.dumps(baidu_result))
-print(json.dumps({'state':1,'error':'no xunfei'}))#(xunfei_result))
-if('score' in baidu_result.keys()):
+print(json.dumps({'state': 1, 'error': 'no xunfei'}))  # (xunfei_result))
+if ('score' in baidu_result.keys()):
     print(baidu_result['score'][1])
-    #确定的操作值
+    # 确定的操作值
 else:
     print(0)
 
-
+# save the audio
 import base64
-file="voice.wav"
+import datetime
+import random
+
+nowTime = datetime.datetime.now().strftime('%Y%m%d%H%M%S')  # 现在
+randomNum = random.randint(10, 99)
+file = "voice/" + nowTime + '_' + str(randomNum) + ".wav"
+
 ori_data = base64.b64decode(audiostr)
+
 fout = open(file, 'wb')
 fout.write(ori_data)
 fout.close()
 
-#
-# sentence="隐藏水分"
-# print(convert_chinese_to_instruction(sentence, command))
+##log the results
+if ('score' in baidu_result.keys()):
+    import logging
+    logging.basicConfig(level=logging.INFO, filename='result.log', filemode='a', format='%(message)s')
+    logging.info(file + "-" + baidu_result['data'] + "-" + baidu_result['score'][1])

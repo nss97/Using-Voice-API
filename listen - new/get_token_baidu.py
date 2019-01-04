@@ -4,6 +4,13 @@ from urllib.request import Request
 from urllib.error import URLError
 from urllib.parse import urlencode
 
+
+class DemoError(Exception):
+    # pass
+    def __init__(self, ErrorInfo):
+        super().__init__(self)  # 初始化父类
+        self.errorinfo = ErrorInfo
+
 # flags
 API_KEY = 'NgawfS7s6NzVeFreXyYHWU6H'
 SECRET_KEY = 'uvdyW57F7gCa817kmut4MGo9LTaPHBZw'
@@ -42,7 +49,7 @@ def fetch_token():
 
 def get_baidu_token():
     token=fetch_token()
-    with open('token.txt','w') as f:
+    with open('static-data/token.txt','w') as f:
         f.write(token)
     with open('../speak/token.txt','w') as f:
         f.write(token)

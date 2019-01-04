@@ -2,7 +2,7 @@ var voiceControl={
     recorder:null,
     voice:null,
     language:"Chinese",
-    debug:true,
+    debug:false,
 }
 
 // *************************
