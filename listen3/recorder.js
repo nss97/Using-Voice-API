@@ -35,7 +35,9 @@ function endRecording() {
                 base64Data = reader.result.replace(/^data:audio\/\wav+;base64,/, "")
                 $.ajax({
                         method: "POST",
-                        url: "server/listen/lservice.php",
+                        // url: "server/listen/lservice.php",
+                        // url: "lservice.php",
+                        url: "server/listen3/lservice.php",
                         data: {
                             lang: voiceControl.language,
                             audio: base64Data,
@@ -44,30 +46,31 @@ function endRecording() {
                     .done(function(msg) {
                         console.log(msg)
                         data = JSON.parse(msg);
-                        baidu = data['baidu'];
-                        xunfei = data['xunfei'];
-                        if (baidu['state'] == 0) {
-                            baiduMessage = baidu['data'];
-                            $(".messages").html("Op: "+baiduMessage);
+                        //results = JSON.parse(data['results']);
+                        results = data.results;
+                        if (results == null) {
+                            $(".messages").html("ERR: server error!");
+                        }else if (results.state == 0) {
+                            message = results.data;
+                            $(".messages").html("Op: "+message);
                         } else {
-                            baiduMessage = baidu['error']['err_msg'];
-                            $(".messages").html("ERR: "+baiduMessage);
+                            message = results.error.err_msg;
+                            $(".messages").html("ERR: "+message);
                         }
-                        if (xunfei['state'] == 0) {
-                            xunfeiMessage = xunfei['data'];
-                        } else {
-                            xunfeiMessage = xunfei['error']['err_msg'];
-                        }
+                        //if (xunfei['state'] == 0) {
+                        //    xunfeiMessage = xunfei['data'];
+                        //} else {
+                        //    xunfeiMessage = xunfei['error']['err_msg'];
+                        //}
                         if (voiceControl.debug) {
-                            console.log(baidu);
-                            console.log(xunfei);
+                            console.log(results);
+                            //console.log(xunfei);
                             $(".messages").html(
-                                "results: <br /> baidu:" + baiduMessage +
-                                '<br /> xunfei:' + xunfeiMessage +
-                                '<br /> caozuo:' + data['caozuo']
+                                "results: <br /> " + message +
+                                '<br /> operation:' + data.op
                             );
                         }
-                        resolve(data['caozuo']);
+                        resolve(data.op);
                     })
                     .fail(function() {
                         $(".messages").html("server error");
@@ -83,7 +86,7 @@ function endRecording() {
     $(".messages").html("loading~");
     if(voiceControl.voice){
         toBackend(voiceControl.voice.blob).then(function callback_for_vr(value) {
-            console.log(value);
+            console.log("operation: "+value);
             // return operation code to front-end
             res(value);
             }
